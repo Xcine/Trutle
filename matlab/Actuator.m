@@ -109,20 +109,20 @@ classdef Actuator
 
             %read first phi
             phi_first = Sensor.get_robot_phi()-1;
-            fprintf('first phi: %f.\n',phi_first);
+            %fprintf('first phi: %f.\n',phi_first);
             phi_dif = 0.0;
             
             tic;
             while phi_dif < 360.0
                 %read actual phi
                 phi = Sensor.get_robot_phi();
-                fprintf('phi: %f.\n',phi);
+                %fprintf('phi: %f.\n',phi);
                 if toc < 5
                     phi_dif = Sensor.transformPhi(phi - phi_first, false);
                 else
                     phi_dif = Sensor.transformPhi(phi - phi_first, true);
                 end
-                fprintf('phi dif: %f.\n',phi_dif);
+                %fprintf('phi dif: %f.\n',phi_dif);
 
                 %get shapes
                 [cur_pos,cur_radii] = Sensor.get_max_pos_and_rad_in_img();
@@ -143,20 +143,20 @@ classdef Actuator
 
             %read first phi
             phi_first = Sensor.get_robot_phi()-1;
-            fprintf('first phi: %f.\n',phi_first);
+            %fprintf('first phi: %f.\n',phi_first);
             phi_dif = 0.0;
             
             tic;
             while phi_dif < 360.0
                 %read actual phi
                 phi = Sensor.get_robot_phi();
-                fprintf('phi: %f.\n',phi);
+                %fprintf('phi: %f.\n',phi);
                 if toc < 5
                     phi_dif = Sensor.transformPhi(phi - phi_first, false);
                 else
                     phi_dif = Sensor.transformPhi(phi - phi_first, true);
                 end
-                fprintf('phi dif: %f.\n',phi_dif);
+                %fprintf('phi dif: %f.\n',phi_dif);
 
                 %get shapes
                 [cur_pos,cur_radii] = Sensor.get_max_pos_and_rad_in_img();
@@ -204,6 +204,35 @@ classdef Actuator
             line([position,position],[0,480]);
             disp("Centered on Cirlce.");
 
+        end
+        
+        function eaten = eat_candy_if_near()
+            [min_dist, name] = Sensor.get_dist_and_name_of_nearest_candy();
+            eaten = false;
+            while min_dist < 0.3
+                removeModel(Sensor.gazebo,name);
+                fprintf("Eaten %s at dist %f.\n", name, min_dist);
+                eaten = true;
+                [min_dist, name] = Sensor.get_dist_and_name_of_nearest_candy();
+            end
+        end
+        
+        function eat_global_near_candy()
+            Actuator.center_on_circle(false);
+            
+            eaten = Actuator.eat_candy_if_near();
+            while eaten == false
+                eaten = Actuator.eat_candy_if_near();
+                Actuator.walk_step(0.2);
+            end
+        end
+        
+        function eat_as_much_as_possible()
+            tic;
+            while toc < 100
+                Actuator.eat_global_near_candy();
+            end
+            
         end
 
     end

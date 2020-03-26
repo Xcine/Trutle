@@ -6,6 +6,8 @@ classdef Sensor
         odom = rossubscriber('/odom');
         laser = rossubscriber('/scan');
         imsub = rossubscriber('/camera/rgb/image_raw');
+        gazebo = ExampleHelperGazeboCommunicator;
+        robot = ExampleHelperGazeboSpawnedModel("mobile_base",Sensor.gazebo);
     end
     
     methods(Static)
@@ -16,17 +18,34 @@ classdef Sensor
             figure;
         end
         
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
-        end
-        
-        function [x,y] = get_robot_position()
+        function [x,y] = get_relative_robot_position()
             odomdata = receive(Sensor.odom,3);
             pose = odomdata.Pose.Pose;
             x = pose.Position.X;
             y = pose.Position.Y;
+        end
+        
+        function [x,y] = get_robot_position()
+            position = Sensor.robot.getState();
+            x = position(1);
+            y = position(2);
+        end
+        
+        function [x,y] = get_position_of_gazebo_obj(name)
+            object = ExampleHelperGazeboSpawnedModel(name,Sensor.gazebo);
+            position = object.getState();
+            x = position(1);
+            y = position(2);
+        end
+        
+        function balls = get_gazebo_balls()
+            cur_state = getSpawnedModels(Sensor.gazebo);
+            balls = [];
+            for n = 1: length(cur_state)
+                if contains(cur_state{n},"Ball")
+                    balls = [balls;convertCharsToStrings(cur_state{n})];
+                end
+            end
         end
         
         function phi = get_robot_phi()
@@ -133,6 +152,23 @@ classdef Sensor
             %returned is the width pixel in image.
 
             [position,rad] = Sensor.get_max_pos_and_rad_in_img();
+        end
+        
+        function [min_dist,min_ball] = get_dist_and_name_of_nearest_candy()
+            [r_x,r_y] = Sensor.get_robot_position();
+            
+            min_dist = 100;
+            min_ball = " ";
+            ball_names = Sensor.get_gazebo_balls();
+            for n = 1: length(ball_names)
+                [b_x,b_y] = Sensor.get_position_of_gazebo_obj(ball_names(n));
+                cur_dist = sqrt((r_x-b_x)^2 + (r_y-b_y)^2);
+                if cur_dist < min_dist
+                    min_dist = cur_dist;
+                    min_ball = ball_names(n);
+                end
+            end
+            
         end
         
     end

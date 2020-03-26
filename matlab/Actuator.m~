@@ -109,20 +109,20 @@ classdef Actuator
 
             %read first phi
             phi_first = Sensor.get_robot_phi()-1;
-            fprintf('first phi: %f.\n',phi_first);
+            %fprintf('first phi: %f.\n',phi_first);
             phi_dif = 0.0;
             
             tic;
             while phi_dif < 360.0
                 %read actual phi
                 phi = Sensor.get_robot_phi();
-                fprintf('phi: %f.\n',phi);
+                %fprintf('phi: %f.\n',phi);
                 if toc < 5
                     phi_dif = Sensor.transformPhi(phi - phi_first, false);
                 else
                     phi_dif = Sensor.transformPhi(phi - phi_first, true);
                 end
-                fprintf('phi dif: %f.\n',phi_dif);
+                %fprintf('phi dif: %f.\n',phi_dif);
 
                 %get shapes
                 [cur_pos,cur_radii] = Sensor.get_max_pos_and_rad_in_img();
@@ -143,20 +143,20 @@ classdef Actuator
 
             %read first phi
             phi_first = Sensor.get_robot_phi()-1;
-            fprintf('first phi: %f.\n',phi_first);
+            %fprintf('first phi: %f.\n',phi_first);
             phi_dif = 0.0;
             
             tic;
             while phi_dif < 360.0
                 %read actual phi
                 phi = Sensor.get_robot_phi();
-                fprintf('phi: %f.\n',phi);
+                %fprintf('phi: %f.\n',phi);
                 if toc < 5
                     phi_dif = Sensor.transformPhi(phi - phi_first, false);
                 else
                     phi_dif = Sensor.transformPhi(phi - phi_first, true);
                 end
-                fprintf('phi dif: %f.\n',phi_dif);
+                %fprintf('phi dif: %f.\n',phi_dif);
 
                 %get shapes
                 [cur_pos,cur_radii] = Sensor.get_max_pos_and_rad_in_img();
@@ -176,7 +176,6 @@ classdef Actuator
                 %phi = select_candy_from_all();
                 %rotate2phi(phi);
                 rad = Actuator.get_rad_of_nearest_candy_of_360();
-                rad
                 Actuator.rotate_to_circle_rad(rad);
             end
 
@@ -197,7 +196,7 @@ classdef Actuator
                 elseif abs(position-320.0) < 70
                     Actuator.rotate_step(dir*0.05);
                 else
-                    Actuator.rotate_step(dir*0.3);
+                    Actuator.rotate_step(dir*0.2);
                 end
                 position = Sensor.get_position_of_near_candy_in_img();
             end
@@ -205,6 +204,27 @@ classdef Actuator
             line([position,position],[0,480]);
             disp("Centered on Cirlce.");
 
+        end
+        
+        function eaten = eat_candy_if_near()
+            [min_dist, name] = Sensor.get_dist_and_name_of_nearest_candy();
+            
+            while min_dist < 0.8
+                removeModel(Sensor.gazebo,name);
+                fprintf("Eaten .\n",)
+                [min_dist, name] = Sensor.get_dist_and_name_of_nearest_candy();
+            end
+        end
+        
+        function eat_global_near_candy()
+            Actuator.center_on_circle(true);
+            min_dist = get_min_dist();
+            
+            while
+            if min_dist < 0.8
+
+            else
+            end
         end
 
     end
