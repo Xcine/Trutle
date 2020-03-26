@@ -1,32 +1,15 @@
 % Building a environemnt
-% Arash
 
-%% adding balls
+
 gazebo = ExampleHelperGazeboCommunicator;
-ball = ExampleHelperGazeboModel('Ball')
-ball2 = ExampleHelperGazeboModel('Ball2')
-spherelink = addLink(ball,'sphere',.1,'position',[-3,0, 1.2],'color',[0 0 1 1])
-spherelink2 = addLink(ball2,'sphere',.1,'position',[-5,0, 1.2],'color',[1 0 0 0])
+to_kill = ["unit_sphere_1", "unit_sphere_2", "unit_sphere_3", "bookshelf", "table", "cube_20k", "cabinet"];
 
-%%Pink color = [1 0 1 1], blue color = [0 0 1 1], black= [0 0 0 1], red = [1 0 0 0]
-%spawnModel(gazebo,ball,[0,1,0])
-%spawnModel(gazebo,ball2,[0,1,0])
-
-%pause
-
-if ismember('Ball',getSpawnedModels(gazebo))
-    removeModel(gazebo,'Ball');
+for n = 1: length(to_kill)
+    if ismember(to_kill(n),getSpawnedModels(gazebo))
+        removeModel(gazebo,to_kill(n));
+    end
 end
 
-%pause
-
- if ismember('Ball2',getSpawnedModels(gazebo))
-    removeModel(gazebo,'Ball2');
-end
-
-%spawnModel(gazebo,ball,[8.5,0,1])
-
-%pause
 x = [1.5    3.5    1.5   1.5   2.5     2.5  2.5    3.5    3.5   4.5];
 y = [-1.5  -1    0.5   1.5   -1      0    1     -0.5    0.5   0];
 names = ["Ball1","Ball2","Ball3","Ball4","Ball5","Ball6","Ball7","Ball8","Ball9","Ball10"];
