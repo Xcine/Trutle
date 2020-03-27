@@ -206,6 +206,35 @@ classdef Actuator
 
         end
         
+        function center_on_rect()
+
+            position = Sensor.get_position_of_rect();
+
+            while ~((position > 310) && (position < 330))
+                if position < 320
+                    dir = 1.0; %turn left
+                elseif position > 320
+                    dir = -1.0; %turn right
+                else
+                    dir = 1,0;
+                end
+                if abs(position-320.0) < 20
+                    Actuator.rotate_step(dir*0.05);
+                elseif abs(position-320.0) < 40
+                    Actuator.rotate_step(dir*0.05);
+                elseif abs(position-320.0) < 70
+                    Actuator.rotate_step(dir*0.05);
+                else
+                    Actuator.rotate_step(dir*0.2);
+                end
+                position = Sensor.get_position_of_rect();
+            end
+
+            line([position,position],[0,480]);
+            disp("Centered on Rectangle.");
+
+        end
+        
         function eaten = eat_candy_if_near()
             [min_dist, name] = Sensor.get_dist_and_name_of_nearest_candy();
             eaten = false;
@@ -217,9 +246,8 @@ classdef Actuator
             end
         end
         
-        function eat_global_near_candy()
+        function eaten = eat_near_candy()
             Actuator.center_on_circle(false);
-            
             eaten = Actuator.eat_candy_if_near();
             while eaten == false
                 eaten = Actuator.eat_candy_if_near();
@@ -230,7 +258,18 @@ classdef Actuator
         function eat_as_much_as_possible()
             tic;
             while toc < 100
-                Actuator.eat_global_near_candy();
+                Actuator.eat_near_candy();
+            end
+            
+        end
+        
+        function eat_number_of_candy(num)
+            cur_num = 0;
+            while cur_num < num
+                eaten = Actuator.eat_near_candy();
+                if eaten == true
+                    cur_num = cur_num + 1;
+                end
             end
             
         end
