@@ -19,6 +19,30 @@ classdef Actuator
             send(Actuator.v_robot,velmsg);
             
             Sensor.show_camera();
+            Sensor.show_laser_scan();
+            
+            velmsg.Linear.X = 0;
+            %disp("Walking ended.")
+        end
+        
+        function  walk_dist(dist,velocity)    
+            velmsg = rosmessage(Actuator.v_robot);
+            velmsg.Linear.X = velocity;
+            velmsg.Angular.Z = 0;
+            
+            Sensor.show_camera();
+            Sensor.show_laser_scan();
+            
+            [x_0,y_0] = Sensor.get_robot_position();
+            cur_dist = 0;
+            while cur_dist < dist
+                send(Actuator.v_robot,velmsg);
+                [x_cur,y_cur] = Sensor.get_robot_position();
+                cur_dist = sqrt((x_0-x_cur)^2 + (y_0-y_cur)^2);
+                fprintf('cur dist: %f.\n', cur_dist);
+                Sensor.show_camera();
+                Sensor.show_laser_scan();
+            end
             
             velmsg.Linear.X = 0;
             %disp("Walking ended.")
@@ -45,24 +69,30 @@ classdef Actuator
             send(Actuator.v_robot,velmsg);  
 
             Sensor.show_camera();
+            Sensor.show_laser_scan();
             
             velmsg.Angular.Z = 0.0;
         end
         
         function rotate_phi(goal_phi, velocity)
             %read first phi
-            phi_first = Sensor.get_robot_phi()-1;
-            fprintf('first phi: %f.\n',phi_first);
+            if velocity < 0
+                fac = -1.0;
+            else
+                fac = 1.0;
+            end
+            phi_first = Sensor.get_robot_phi()-fac*1;
+            %fprintf('first phi: %f.\n',phi_first);
             phi_dif = 0.0;
             tic;
             while phi_dif < goal_phi
                 %read actual phi
                 phi = Sensor.get_robot_phi();
-                fprintf('phi: %f.\n',phi);
+                %fprintf('phi: %f.\n',phi);
                 if toc < 5
-                    phi_dif = Sensor.transformPhi(phi - phi_first, false);
+                    phi_dif = Sensor.transformPhi(fac*(phi - phi_first), false);
                 else
-                    phi_dif = Sensor.transformPhi(phi - phi_first, true);
+                    phi_dif = Sensor.transformPhi(fac*(phi - phi_first), true);
                 end
                 fprintf('phi dif: %f.\n',phi_dif);
 
@@ -237,7 +267,7 @@ classdef Actuator
         
         function center_on_door()
 
-            position = Sensor.spot_doors();
+            position = Sensor.door_in_laser();
 
             while ~((position > 310) && (position < 330))
                 if position < 320
@@ -256,12 +286,52 @@ classdef Actuator
                 else
                     Actuator.rotate_step(dir*0.3);
                 end
-                position = Sensor.spot_doors();
+                position = Sensor.door_in_laser();
             end
 
             line([position,position],[0,480]);
             disp("Centered on Rectangle.");
 
+        end
+        
+        function walk_through_door()
+            Actuator.center_on_door();
+            [start_nan,end_nan,ranges] = Sensor.after_door_nans();
+            dist_points = 10;
+            alpha = dist_points*0.001636688830331;
+            c = ranges(start_nan-1)
+            b = ranges(start_nan - dist_points-1)
+            if b < c
+                %door on left
+                disp("door on left");
+                fac = 1.0;
+                degs = 90;
+            else
+                %door on right
+                disp("door on right");
+                fac = -1.0;
+                degs = 90;
+                c = ranges(end_nan+1)
+                b = ranges(start_nan + dist_points+1)
+            end
+            
+            
+            [beta,y,x] = Sensor.get_beta_y_to_parallel_door(alpha,c,b);
+            if x < 4 && y < 4
+                beta_deg = (beta*360)/(2*pi);
+                Actuator.rotate_phi(beta_deg,fac*0.25);
+                Actuator.walk_dist(y,0.25);
+                Actuator.rotate_phi(degs,-0.25*fac);
+                Actuator.center_on_door();
+                Actuator.walk_dist(x+0.3,0.25);
+                disp("Walked through door");
+            else
+                disp("x y to high");
+                x
+                y
+            end
+
+            
         end
         
         function eaten = eat_candy_if_near()

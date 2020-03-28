@@ -69,7 +69,138 @@ classdef Sensor
         
         function show_laser_scan()
             scan = receive(Sensor.laser,3);
+            subplot(2,1,2);
             plot(scan);
+        end
+        
+        function [beta,y,x] = get_beta_y_to_parallel_door(alpha,c,b)
+            a = sqrt(b^2 + c^2 -2*b*c*cos(alpha));
+            beta = asin((sin(alpha)*b)/a);
+            y = cos(beta)*c;
+            x = sin(beta)*c;
+        end
+        
+        function [start_nan, end_nan, ranges] = after_door_nans()
+            scan = receive(Sensor.laser,3);
+            subplot(2,1,2);
+            plot(scan);
+            Sensor.show_camera();
+            ranges = scan.Ranges;
+            position = -1;
+  
+            smooth1=[0 1 0];
+            smooth2=[0 1 1 0];
+            smooth3=[0 1 1 1 0];
+            cur_nan_num = 0;
+            last_num = ranges(1);
+            nan_ranges = reshape(isnan(ranges), [1,640]);
+            k1 = strfind(nan_ranges,smooth1);
+            k2 = strfind(nan_ranges,smooth2);   
+            k3 = strfind(nan_ranges,smooth3);
+            
+            for n=1: length(k1)
+                new_value = nan_ranges(k1(n));
+                nan_ranges(k1(n)+1) = new_value;
+            end
+            
+            for n=1: length(k2)
+                new_value = nan_ranges(k2(n));
+                nan_ranges(k2(n)+1) = new_value;
+                nan_ranges(k2(n)+2) = new_value;
+            end
+            
+            for n=1: length(k3)
+                new_value = nan_ranges(k3(n));
+                nan_ranges(k3(n)+1) = new_value;
+                nan_ranges(k3(n)+2) = new_value;
+                nan_ranges(k3(n)+3) = new_value;
+            end
+            
+            nans = regionprops(nan_ranges, 'Area');
+            allAreas = max([nans.Area]);
+            if isempty(allAreas)
+                start_nan = 1;
+                end_nan = 640;
+            else
+                onex = ones([1 allAreas]);
+                start_nan = strfind(nan_ranges,onex);
+                %start_nan = sum(bwareafilt(nan_ranges==0, 1));
+                end_nan = allAreas + start_nan;
+            end
+            
+        end
+        
+        function position = door_in_laser()
+            scan = receive(Sensor.laser,3);
+            subplot(2,1,2);
+            plot(scan);
+            Sensor.show_camera();
+            ranges = scan.Ranges;
+            position = -1;
+  
+            smooth1=[0 1 0];
+            smooth2=[0 1 1 0];
+            smooth3=[0 1 1 1 0];
+            cur_nan_num = 0;
+            last_num = ranges(1);
+            nan_ranges = reshape(isnan(ranges), [1,640]);
+            k1 = strfind(nan_ranges,smooth1);
+            k2 = strfind(nan_ranges,smooth2);   
+            k3 = strfind(nan_ranges,smooth3);
+            
+            for n=1: length(k1)
+                new_value = nan_ranges(k1(n));
+                nan_ranges(k1(n)+1) = new_value;
+            end
+            
+            for n=1: length(k2)
+                new_value = nan_ranges(k2(n));
+                nan_ranges(k2(n)+1) = new_value;
+                nan_ranges(k2(n)+2) = new_value;
+            end
+            
+            for n=1: length(k3)
+                new_value = nan_ranges(k3(n));
+                nan_ranges(k3(n)+1) = new_value;
+                nan_ranges(k3(n)+2) = new_value;
+                nan_ranges(k3(n)+3) = new_value;
+            end
+            
+            nans = regionprops(nan_ranges, 'Area');
+            allAreas = max([nans.Area]);
+            if isempty(allAreas)
+                start_nan = 1;
+                end_nan = 640;
+            else
+                onex = ones([1 allAreas]);
+                start_nan = strfind(nan_ranges,onex);
+                start_nan = sum(bwareafilt(nan_ranges==0, 1));
+                end_nan = allAreas + start_nan;
+            end
+
+            
+            if (start_nan ~= 1) && (end_nan ~= 640)
+                if (allAreas < 450)
+                    position = start_nan + allAreas/2.0;
+                    position = 640 - position;
+                end
+            end
+            
+        end
+        
+        function bool = wall_in_sight()
+            scan = receive(Sensor.laser,3);
+            subplot(2,1,2);
+            plot(scan);
+            Sensor.show_camera();
+            ranges = scan.Ranges;
+            bool = false;
+            
+            if ranges(320)>0 
+                bool = true;
+            end
+            
+            
         end
         
         function color = checkColor(r,g,b)
@@ -94,7 +225,7 @@ classdef Sensor
                 end
             else
                 if goOver
-                    while phi < 40.0
+                    while phi < 20.0
                         phi = phi + 360.0;
                     end
                 else
@@ -124,6 +255,7 @@ classdef Sensor
         end
         
         function show_camera()
+            subplot(2,1,1);
             imshow(Sensor.get_camera_img());
         end
         
