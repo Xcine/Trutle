@@ -235,6 +235,35 @@ classdef Actuator
 
         end
         
+        function center_on_door()
+
+            position = Sensor.spot_doors();
+
+            while ~((position > 310) && (position < 330))
+                if position < 320
+                    dir = 1.0; %turn left
+                elseif position > 320
+                    dir = -1.0; %turn right
+                else
+                    dir = 1,0;
+                end
+                if abs(position-320.0) < 20
+                    Actuator.rotate_step(dir*0.05);
+                elseif abs(position-320.0) < 40
+                    Actuator.rotate_step(dir*0.05);
+                elseif abs(position-320.0) < 70
+                    Actuator.rotate_step(dir*0.05);
+                else
+                    Actuator.rotate_step(dir*0.3);
+                end
+                position = Sensor.spot_doors();
+            end
+
+            line([position,position],[0,480]);
+            disp("Centered on Rectangle.");
+
+        end
+        
         function eaten = eat_candy_if_near()
             [min_dist, name] = Sensor.get_dist_and_name_of_nearest_candy();
             eaten = false;

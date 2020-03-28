@@ -246,12 +246,12 @@ classdef Sensor
             I = Sensor.get_camera_img();
             grayI = rgb2gray(I);
             bw= imadjust(grayI);
-            bw = edge(grayI,'Canny',0.01);
+            bw = edge(grayI,'Canny',0.04);
             %bw = bw <105;
             %bw = bwareaopen(bw, 50); 
             %bw = edge(grayI,'Canny', 0.04);
             stats = regionprops(bw, 'BoundingBox','Perimeter','Area','FilledArea','Solidity','Centroid');
-            imshow(bw);
+            imshow(I);
             
             id = -1;
             max_area = 0;
@@ -259,70 +259,84 @@ classdef Sensor
             c2 = 0;
             numc=0;
             position = -1;
-            for i = 1:numel(stats)
-                cur_area = stats(i).Area;
-                bbu = stats(i).BoundingBox(2);
-                bb1 = stats(i).BoundingBox(3);
-                bb2 = stats(i).BoundingBox(4);
-                sol = stats(i).Solidity;
-                ratio = bb2/bb1;
-                if (ratio > 1.1) && (bb1 > 90)
-                    c1 = c1 + stats(i).Centroid(1);
-                    c2 = c2 + stats(i).Centroid(2);
-                    numc = numc + 1;
-                end
-                
-                if (cur_area > max_area) && (ratio > 1.1) && (bb1 > 90) && (bbu+bb2>240)
-                    max_area = cur_area;
-                    id = i;
-                end
-            end
-            c1 = c1/numc;
-            c2 = c2/numc;
+%             for i = 1:numel(stats)
+%                 cur_area = stats(i).Area;
+%                 bbu = stats(i).BoundingBox(2);
+%                 bb1 = stats(i).BoundingBox(3);
+%                 bb2 = stats(i).BoundingBox(4);
+%                 sol = stats(i).Solidity;
+%                 ratio = bb2/bb1;
+% %                 if (ratio > 1.1)% && (bb1 > 90)
+% %                     c1 = c1 + stats(i).Centroid(1);
+% %                     c2 = c2 + stats(i).Centroid(2);
+% %                     numc = numc + 1;
+% %                 end
+%                 
+%                 if (cur_area > max_area) && (ratio > 1.1) && (bb1 > 40) && (bbu+bb2>240)
+%                     max_area = cur_area;
+%                     id = i;
+%                 end
+%             end
+%             c1 = c1/numc;
+%             c2 = c2/numc;
             %hold on;
             %plot(c1,c2, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
+            num = numel(stats);
+            num
+            if num > 50
+                %position = 320;
+            end
+
            
-            if id ~= -1
-                rectangle('Position', stats(id).BoundingBox, ...
-                'Linewidth', 3, 'EdgeColor', 'r', 'LineStyle', '--');
-                bb = stats(id)
-                
-                if true%~isnan(c1)
-                    if true%Sensor.cen_in_rect(bb,c1,c2)
-                        position = bb.BoundingBox(1) + bb.BoundingBox(3)/2.0;
-                        line([position,position],[0,480]);
-                    end
-                end              
-            end
+%             if id ~= -1
+%                 rectangle('Position', stats(id).BoundingBox, ...
+%                 'Linewidth', 3, 'EdgeColor', 'r', 'LineStyle', '--');
+%                 bb = stats(id);
+%                 
+%                 if true%~isnan(c1)
+%                     if true%Sensor.cen_in_rect(bb,c1,c2)
+%                         %position = bb.BoundingBox(1) + bb.BoundingBox(3)/2.0;
+%                         line([position,position],[0,480]);
+%                     end
+%                 end              
+%             end
                         
-            for i = 1:numel(stats)
-                rectangle('Position', stats(i).BoundingBox, ...
-                'Linewidth', 1, 'EdgeColor', 'b', 'LineStyle', '--');
-            end
+%             for i = 1:numel(stats)
+%                 rectangle('Position', stats(i).BoundingBox, ...
+%                 'Linewidth', 1, 'EdgeColor', 'b', 'LineStyle', '--');
+%             end
             
             
         end
         
-        function spotDoors()
-            
+        function position = spot_doors()
+            position = -1;
             I = Sensor.get_camera_img();
             imshow(I);
             grayI = rgb2gray(I);        
-            BW1 = edge(grayI,'Canny', 0.04);
+            BW1 = edge(grayI,'Canny', 0.08);
 
             [H, T, R] = hough(BW1);
-            lines = houghlines(BW1, R, T, H);
+            P  = houghpeaks(H,5,'threshold',ceil(0.3*max(H(:))));
+            lines = houghlines(BW1,T,R,P,'FillGap',40,'MinLength',5);
+            imshow(I), hold on
+            max_len = 0;
+            xy_long = 0;
             for k = 1:length(lines)
                 xy=[lines(k).point1; lines(k).point2];
-                plot(xy(:,1),xy(:,2),'LineWidth',2,'Color','green')
+                d = xy(2,2) - xy(1,2);
+                if d > 50
+               
+                    plot(xy(:,1),xy(:,2),'LineWidth',2,'Color','green')
 
-                plot(xy(1,1),xy(1,2),'x','LineWidth',2,'Color','yellow')
-                plot(xy(2,1),xy(2,2),'x','LineWidth',2,'Color','red')
+                    plot(xy(1,1),xy(1,2),'x','LineWidth',2,'Color','yellow')
+                    plot(xy(2,1),xy(2,2),'x','LineWidth',2,'Color','red')
 
-                len = norm(lines(k).point1-lines(k).point2);
-                if (len > max_len)
-                    max_len = len;
-                    xy_long = xy;
+                    len = norm(lines(k).point1-lines(k).point2);
+                    if (len > max_len)
+                        max_len = len;
+                        xy_long = xy;
+                    end
                 end
             end
 
