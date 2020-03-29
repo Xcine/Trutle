@@ -80,41 +80,59 @@ classdef Sensor
             x = sin(beta)*c;
         end
         
-        function [start_nan, end_nan, ranges] = after_door_nans()
-            scan = receive(Sensor.laser,3);
-            subplot(2,1,2);
-            plot(scan);
-            Sensor.show_camera();
-            ranges = scan.Ranges;
-            position = -1;
-  
+        function ranges = smooth_nans(ranges)
             smooth1=[0 1 0];
             smooth2=[0 1 1 0];
             smooth3=[0 1 1 1 0];
-            cur_nan_num = 0;
-            last_num = ranges(1);
             nan_ranges = reshape(isnan(ranges), [1,640]);
             k1 = strfind(nan_ranges,smooth1);
             k2 = strfind(nan_ranges,smooth2);   
             k3 = strfind(nan_ranges,smooth3);
             
             for n=1: length(k1)
-                new_value = nan_ranges(k1(n));
-                nan_ranges(k1(n)+1) = new_value;
+                new_value = ranges(k1(n));
+                ranges(k1(n)+1) = new_value;
+                ranges(k1(n)+1) = new_value;
             end
             
             for n=1: length(k2)
-                new_value = nan_ranges(k2(n));
-                nan_ranges(k2(n)+1) = new_value;
-                nan_ranges(k2(n)+2) = new_value;
+                new_value = ranges(k2(n));
+                ranges(k2(n)+1) = new_value;
+                ranges(k2(n)+2) = new_value;
             end
             
             for n=1: length(k3)
-                new_value = nan_ranges(k3(n));
-                nan_ranges(k3(n)+1) = new_value;
-                nan_ranges(k3(n)+2) = new_value;
-                nan_ranges(k3(n)+3) = new_value;
+                new_value = ranges(k3(n));
+                ranges(k3(n)+1) = new_value;
+                ranges(k3(n)+2) = new_value;
+                ranges(k3(n)+3) = new_value;
             end
+        end
+        
+        function [start_nan, end_nan, ranges] = after_door_nans()
+            scan = receive(Sensor.laser,3);
+            subplot(2,1,2);
+            plot(scan);
+            Sensor.show_camera();
+            ranges = scan.Ranges;
+            
+            ranges = Sensor.smooth_nans(ranges);
+            
+            jump_id_right = -1;
+            jump_id_left = -1;
+            len_ranges = length(ranges);
+            for n=1:len_ranges-2
+                dif1 = abs(ranges(n)-ranges(n+1));
+                dif2 = abs(ranges(len_ranges - n)-ranges(len_ranges - n-1));
+                if dif1 > 0.6 && jump_id_right == -1
+                    jump_id_right = n;
+                end
+                if dif2 > 0.6 && jump_id_right == -1
+                    jump_id_left = len_ranges-n;
+                end
+            end
+            
+            nan_ranges = reshape(isnan(ranges), [1,640]);
             
             nans = regionprops(nan_ranges, 'Area');
             allAreas = max([nans.Area]);
@@ -128,6 +146,28 @@ classdef Sensor
                 end_nan = allAreas + start_nan;
             end
             
+            if (jump_id_right ~= -1) && (jump_id_left ~= -1) && abs(jump_id_right-jump_id_left)<4
+                if start_nan < jump_id_right
+                    end_nan = jump_id_left+1;
+                    allAreas = (end_nan-start_nan)/2.0;
+                else
+                    start_nan = jump_id_right;
+                    allAreas = (end_nan-start_nan)/2.0;
+                end
+            elseif (jump_id_right ~= -1) && (jump_id_left ~= -1)
+                start_nan = jump_id_right;
+                end_nan = jump_id_left+1;
+                allAreas = (end_nan-start_nan)/2.0;
+            elseif (jump_id_left ~= -1)
+                end_nan = jump_id_left+1;
+                allAreas = (end_nan-start_nan)/2.0;
+            elseif (jump_id_right) ~= -1
+                start_nan = jump_id_right;
+                allAreas = (end_nan-start_nan)/2.0;
+            end
+            
+            fprintf("Door(s,e,A): (%f, %f, %f)\n", start_nan, allAreas, end_nan);
+            
         end
         
         function position = door_in_laser()
@@ -138,33 +178,23 @@ classdef Sensor
             ranges = scan.Ranges;
             position = -1;
   
-            smooth1=[0 1 0];
-            smooth2=[0 1 1 0];
-            smooth3=[0 1 1 1 0];
-            cur_nan_num = 0;
-            last_num = ranges(1);
+            ranges = Sensor.smooth_nans(ranges);
+            
+            jump_id_right = -1;
+            jump_id_left = -1;
+            len_ranges = length(ranges);
+            for n=1:len_ranges-2
+                dif1 = abs(ranges(n)-ranges(n+1));
+                dif2 = abs(ranges(len_ranges - n)-ranges(len_ranges - n-1));
+                if dif1 > 0.6 && jump_id_right == -1
+                    jump_id_right = n;
+                end
+                if dif2 > 0.6 && jump_id_right == -1
+                    jump_id_left = len_ranges-n;
+                end
+            end
+            
             nan_ranges = reshape(isnan(ranges), [1,640]);
-            k1 = strfind(nan_ranges,smooth1);
-            k2 = strfind(nan_ranges,smooth2);   
-            k3 = strfind(nan_ranges,smooth3);
-            
-            for n=1: length(k1)
-                new_value = nan_ranges(k1(n));
-                nan_ranges(k1(n)+1) = new_value;
-            end
-            
-            for n=1: length(k2)
-                new_value = nan_ranges(k2(n));
-                nan_ranges(k2(n)+1) = new_value;
-                nan_ranges(k2(n)+2) = new_value;
-            end
-            
-            for n=1: length(k3)
-                new_value = nan_ranges(k3(n));
-                nan_ranges(k3(n)+1) = new_value;
-                nan_ranges(k3(n)+2) = new_value;
-                nan_ranges(k3(n)+3) = new_value;
-            end
             
             nans = regionprops(nan_ranges, 'Area');
             allAreas = max([nans.Area]);
@@ -174,14 +204,36 @@ classdef Sensor
             else
                 onex = ones([1 allAreas]);
                 start_nan = strfind(nan_ranges,onex);
-                start_nan = sum(bwareafilt(nan_ranges==0, 1));
+                %start_nan = sum(bwareafilt(nan_ranges==0, 1));
                 end_nan = allAreas + start_nan;
+            end
+            
+            if (jump_id_right ~= -1) && (jump_id_left ~= -1) && abs(jump_id_right-jump_id_left)<4
+                if start_nan < jump_id_right
+                    end_nan = jump_id_left+1;
+                    allAreas = (end_nan-start_nan)/2.0;
+                else
+                    start_nan = jump_id_right;
+                    allAreas = (end_nan-start_nan)/2.0;
+                end
+            elseif (jump_id_right ~= -1) && (jump_id_left ~= -1)
+                start_nan = jump_id_right;
+                end_nan = jump_id_left+1;
+                allAreas = (end_nan-start_nan)/2.0;
+            elseif (jump_id_left ~= -1)
+                end_nan = jump_id_left+1;
+                allAreas = (end_nan-start_nan)/2.0;
+            elseif (jump_id_right) ~= -1
+                start_nan = jump_id_right;
+                allAreas = (end_nan-start_nan)/2.0;
             end
 
             
             if (start_nan ~= 1) && (end_nan ~= 640)
                 if (allAreas < 450)
+                    %fprintf("Door(s,e,A): (%f, %f, %f)\n", start_nan, allAreas, end_nan);
                     position = start_nan + allAreas/2.0;
+                    %fprintf("position: %f \n",position);
                     position = 640 - position;
                 end
             end

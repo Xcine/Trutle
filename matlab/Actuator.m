@@ -39,10 +39,11 @@ classdef Actuator
                 send(Actuator.v_robot,velmsg);
                 [x_cur,y_cur] = Sensor.get_robot_position();
                 cur_dist = sqrt((x_0-x_cur)^2 + (y_0-y_cur)^2);
-                fprintf('cur dist: %f.\n', cur_dist);
+                %fprintf('cur dist: %f.\n', cur_dist);
                 Sensor.show_camera();
                 Sensor.show_laser_scan();
             end
+            fprintf('walked dist: %f.\n', cur_dist);
             
             velmsg.Linear.X = 0;
             %disp("Walking ended.")
@@ -94,11 +95,12 @@ classdef Actuator
                 else
                     phi_dif = Sensor.transformPhi(fac*(phi - phi_first), true);
                 end
-                fprintf('phi dif: %f.\n',phi_dif);
+                %fprintf('phi dif: %f.\n',phi_dif);
 
                 %give spin vel
                 Actuator.rotate_step(velocity);
             end
+            fprintf('rotated phi: %f.\n',phi_dif);
         end
         
         function rotate_to_global_phi(phi)
@@ -265,10 +267,10 @@ classdef Actuator
 
         end
         
-        function center_on_door()
-
+        function timeout = center_on_door()
+            tic;
             position = Sensor.door_in_laser();
-
+            timeout = false;
             while ~((position > 310) && (position < 330))
                 if position < 320
                     dir = 1.0; %turn left
@@ -278,30 +280,46 @@ classdef Actuator
                     dir = 1,0;
                 end
                 if abs(position-320.0) < 20
-                    Actuator.rotate_step(dir*0.05);
+                    Actuator.rotate_step(dir*0.03);
                 elseif abs(position-320.0) < 40
-                    Actuator.rotate_step(dir*0.05);
+                    Actuator.rotate_step(dir*0.03);
                 elseif abs(position-320.0) < 70
-                    Actuator.rotate_step(dir*0.05);
+                    Actuator.rotate_step(dir*0.07);
                 else
                     Actuator.rotate_step(dir*0.3);
                 end
                 position = Sensor.door_in_laser();
+                if toc >20
+                    timeout = false;
+                end
             end
 
             line([position,position],[0,480]);
-            disp("Centered on Rectangle.");
+            disp("Centered on Door.");
 
         end
         
-        function walk_through_door()
-            Actuator.center_on_door();
+        function bool = walk_through_door_if_there()
+            bool = false;
+            timeout = Actuator.center_on_door();
+            
+            while timeout == true
+                disp("Time out!");
+                Actuator.walk_step(0.5);
+                timeout = centeredActuator.center_on_door();
+            end
+            
             [start_nan,end_nan,ranges] = Sensor.after_door_nans();
+            %start_nan,end_nan,ranges
             dist_points = 10;
             alpha = dist_points*0.001636688830331;
-            c = ranges(start_nan-1)
-            b = ranges(start_nan - dist_points-1)
-            if b < c
+            c = ranges(start_nan-1);
+            b = ranges(start_nan - dist_points-1);
+            c2 = ranges(end_nan+1);
+            b2 = ranges(end_nan + dist_points+1);
+            dif_b = abs(b2-b);
+            fprintf("dif b-b2: %f\n",abs(b2-b));
+            if b < b2
                 %door on left
                 disp("door on left");
                 fac = 1.0;
@@ -311,27 +329,46 @@ classdef Actuator
                 disp("door on right");
                 fac = -1.0;
                 degs = 90;
-                c = ranges(end_nan+1)
-                b = ranges(start_nan + dist_points+1)
+                c = ranges(end_nan+1);
+                b = ranges(end_nan + dist_points+1);
             end
-            
             
             [beta,y,x] = Sensor.get_beta_y_to_parallel_door(alpha,c,b);
             if x < 4 && y < 4
                 beta_deg = (beta*360)/(2*pi);
-                Actuator.rotate_phi(beta_deg,fac*0.25);
-                Actuator.walk_dist(y,0.25);
-                Actuator.rotate_phi(degs,-0.25*fac);
+                fprintf("beta,y,x: %f, %f, %f\n",beta_deg,y,x);
+                if beta_deg > 30 && y > 0.5 && dif_b > 0.08
+                    Actuator.rotate_phi(beta_deg,fac*0.15);
+                    Actuator.walk_dist(y,0.25);
+                    Actuator.rotate_phi(degs,-0.25*fac);
+                else
+                    x = c +0.3;
+                end
                 Actuator.center_on_door();
+                Actuator.walk_step(0.1)
+                time_out = Actuator.center_on_door();
+                
+                while timeout == true
+                    disp("Time out!");
+                    Actuator.walk_step(0.5);
+                    timeout = centeredActuator.center_on_door();
+                end
+                
                 Actuator.walk_dist(x+0.3,0.25);
+                bool = true;
                 disp("Walked through door");
-            else
-                disp("x y to high");
-                x
-                y
+            else               
+                disp("No door in sight, walking random");
+                Actuator.walk_dist(3,0.25);    
+                bool = false;
             end
-
-            
+        end
+        
+        function walk_through_door()
+            bool = false;
+            while bool == false
+                bool = Actuator.walk_through_door_if_there();
+            end
         end
         
         function eaten = eat_candy_if_near()
