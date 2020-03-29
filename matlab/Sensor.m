@@ -313,6 +313,7 @@ classdef Sensor
         
         function [max_pos,max_rad] = get_max_pos_and_rad_in_img()
             I = Sensor.get_camera_img();
+            subplot(2,1,1)
             imshow(I);
             [R_b,G_b,B_b] = Sensor.get_rgb_of_img(I);
             

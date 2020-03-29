@@ -17,6 +17,7 @@ classdef Actuator
             velmsg.Linear.X = velocity;
             velmsg.Angular.Z = 0;
             send(Actuator.v_robot,velmsg);
+            Actuator.eat_candy_if_near();
             
             Sensor.show_camera();
             Sensor.show_laser_scan();
@@ -37,6 +38,7 @@ classdef Actuator
             cur_dist = 0;
             while cur_dist < dist
                 send(Actuator.v_robot,velmsg);
+                Actuator.eat_candy_if_near();
                 [x_cur,y_cur] = Sensor.get_robot_position();
                 cur_dist = sqrt((x_0-x_cur)^2 + (y_0-y_cur)^2);
                 %fprintf('cur dist: %f.\n', cur_dist);
@@ -58,6 +60,7 @@ classdef Actuator
             while toc < tics
                 send(v_robot,velmsg);
                 Sensor.show_camera();
+                Sensor.show_laser_scan();
             end
             %disp("Walking ended.");
         end
@@ -68,7 +71,7 @@ classdef Actuator
             velmsg.Angular.Z = velocity;
             velmsg.Linear.X = 0;
             send(Actuator.v_robot,velmsg);  
-
+            
             Sensor.show_camera();
             Sensor.show_laser_scan();
             
