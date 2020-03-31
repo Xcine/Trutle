@@ -335,7 +335,7 @@ classdef Sensor
                     if cur_radii > max_rad
                         max_rad = cur_radii;
                         max_pos = cur_position;
-%                         max_id = id_max
+                        max_id = id_max;
 %                         radii
 %                         centers
                     end
@@ -345,11 +345,38 @@ classdef Sensor
             end
         end
         
-        function [position,rad] = get_position_of_near_candy_in_img()
+        function [position,rad,max_id] = get_position_of_near_candy_in_img(last_id)
             %returns -1 if no candy in image. Image is 640-480. position is
             %returned is the width pixel in image.
             
-            [position,rad,max_id] = Sensor.get_max_pos_and_rad_in_img();
+            [position1,rad,max_id] = Sensor.get_max_pos_and_rad_in_img();
+            
+            if max_id >= last_id
+                position = position1;
+            else
+                position = Sensor.get_position_id_candy_in_img(last_id);
+            end
+        end
+        
+        function position = get_position_id_candy_in_img(id)
+            I = Sensor.get_camera_img();
+            subplot(2,1,1)
+            imshow(I);
+            [R_b,G_b,B_b] = Sensor.get_rgb_of_img(I);
+            
+            N = {R_b,B_b};
+            position = -1;
+            for n=1: length(N)
+                [centers, radii, metric] = imfindcircles(N{n}, [10,300]);
+                if isempty([centers, radii, metric])
+                else
+                    if id <= length(centers)
+                        position = centers(id);
+                    end
+                    %viscircles(centers,radii,"EdgeColor","black");
+                end
+
+            end
         end
         
         function [min_dist,min_ball] = get_dist_and_name_of_nearest_candy()

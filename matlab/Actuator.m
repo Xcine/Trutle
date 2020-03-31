@@ -217,8 +217,8 @@ classdef Actuator
                 Actuator.rotate_to_circle_rad(rad);
             end
 
-            [position,rad] = Sensor.get_position_of_near_candy_in_img();
-            if rad<15
+            [position,rad,last_id] = Sensor.get_position_of_near_candy_in_img(1);
+            if rad<10
                 position = 20;
             end
 
@@ -239,8 +239,9 @@ classdef Actuator
                 else
                     Actuator.rotate_step(dir*0.2);
                 end
-                [position,rad] = Sensor.get_position_of_near_candy_in_img();
-                if rad<15
+                [position,rad,max_id] = Sensor.get_position_of_near_candy_in_img(last_id);
+                last_id = max_id;
+                if rad<10
                     position = 20;
                 end
                 if toc > Actuator.time_out_const
@@ -375,7 +376,8 @@ classdef Actuator
                 
                 if x > 2
                     Actuator.walk_dist(x/2.0,0.25);
-                    Actuator.center_on_door();
+                    %Actuator.center_on_door();
+                    Actuator.rotate_step(0.1);
                     Actuator.walk_dist(x/2.0+0.3,0.25);
                 else
                     Actuator.walk_dist(x+0.3,0.25);
@@ -399,7 +401,7 @@ classdef Actuator
         function eaten = eat_candy_if_near()
             [min_dist, name] = Sensor.get_dist_and_name_of_nearest_candy();
             eaten = false;
-            while min_dist < 0.3
+            while min_dist < 0.4
                 removeModel(Sensor.gazebo,name);
                 fprintf("Eaten %s at dist %f.\n", name, min_dist);
                 eaten = true;
@@ -416,7 +418,7 @@ classdef Actuator
             while_timer = 0;
             if time_out == false
                 while eaten == false
-                    if while_timer >= 8
+                    if while_timer >= 5
                         time_out = Actuator.center_on_circle(false);
                         while_timer = 0;
                     end
@@ -470,7 +472,7 @@ classdef Actuator
                 end
                 
                 if eat_fails >=1
-                    Actuator.walk_dist(0.2,0.2);
+                    Actuator.walk_dist(0.35,0.2);
                 end
                 
                 if wall_problem == true
