@@ -31,6 +31,10 @@ classdef Sensor
             y = position(2);
         end
         
+        function dist = get_dist_of_2_positions(x1,y1,x2,y2)
+            dist = sqrt((x1-x2)^2 + (y1-y2)^2);
+        end
+        
         function [x,y] = get_position_of_gazebo_obj(name)
             object = ExampleHelperGazeboSpawnedModel(name,Sensor.gazebo);
             position = object.getState();
@@ -311,7 +315,7 @@ classdef Sensor
             imshow(Sensor.get_camera_img());
         end
         
-        function [max_pos,max_rad] = get_max_pos_and_rad_in_img()
+        function [max_pos,max_rad, max_id] = get_max_pos_and_rad_in_img()
             I = Sensor.get_camera_img();
             subplot(2,1,1)
             imshow(I);
@@ -320,6 +324,7 @@ classdef Sensor
             N = {R_b,B_b};
             max_pos = -1;
             max_rad = -1;
+            max_id = -1;
             for n=1: length(N)
                 [centers, radii, metric] = imfindcircles(N{n}, [10,300]);
                 if isempty([centers, radii, metric])
@@ -330,6 +335,9 @@ classdef Sensor
                     if cur_radii > max_rad
                         max_rad = cur_radii;
                         max_pos = cur_position;
+%                         max_id = id_max
+%                         radii
+%                         centers
                     end
                     %viscircles(centers,radii,"EdgeColor","black");
                 end
@@ -337,11 +345,11 @@ classdef Sensor
             end
         end
         
-        function position = get_position_of_near_candy_in_img()
+        function [position,rad] = get_position_of_near_candy_in_img()
             %returns -1 if no candy in image. Image is 640-480. position is
             %returned is the width pixel in image.
-
-            [position,rad] = Sensor.get_max_pos_and_rad_in_img();
+            
+            [position,rad,max_id] = Sensor.get_max_pos_and_rad_in_img();
         end
         
         function [min_dist,min_ball] = get_dist_and_name_of_nearest_candy()

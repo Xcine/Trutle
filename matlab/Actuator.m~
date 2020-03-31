@@ -131,7 +131,7 @@ classdef Actuator
         function rotate_to_circle_rad(rad)
             max_radii = 0;
             while (abs(max_radii-rad) > 3) && (max_radii < rad) 
-                [pos,max_radii,max_id] = Sensor.get_max_pos_and_rad_in_img();
+                [pos,max_radii] = Sensor.get_max_pos_and_rad_in_img();
                 
                 %give spin vel
                 Actuator.rotate_step(0.8);
@@ -161,7 +161,7 @@ classdef Actuator
                 %fprintf('phi dif: %f.\n',phi_dif);
 
                 %get shapes
-                [cur_pos,cur_radii,max_id] = Sensor.get_max_pos_and_rad_in_img();
+                [cur_pos,cur_radii] = Sensor.get_max_pos_and_rad_in_img();
                 if cur_radii > max_radii
                     max_radii = cur_radii;
                     max_phi = phi;
@@ -195,7 +195,7 @@ classdef Actuator
                 %fprintf('phi dif: %f.\n',phi_dif);
 
                 %get shapes
-                [cur_pos,cur_radii,max_id] = Sensor.get_max_pos_and_rad_in_img();
+                [cur_pos,cur_radii] = Sensor.get_max_pos_and_rad_in_img();
                 if cur_radii > max_radii
                     max_radii = cur_radii;
                     max_phi = phi;
@@ -418,7 +418,6 @@ classdef Actuator
                 while eaten == false
                     if while_timer >= 8
                         time_out = Actuator.center_on_circle(false);
-                        while_timer = 0;
                     end
                     while_timer = while_timer + 1;
                     eaten = Actuator.eat_candy_if_near();
