@@ -418,7 +418,7 @@ classdef Actuator
             while_timer = 0;
             if time_out == false
                 while eaten == false
-                    if while_timer >= 5
+                    if while_timer >= 8
                         time_out = Actuator.center_on_circle(false);
                         while_timer = 0;
                     end
@@ -434,6 +434,7 @@ classdef Actuator
                         disp("I think there is a wall, I will back up");
                         Actuator.walk_dist(0.3,-0.3);
                         time_out = true;
+                        eaten = false;
                         break
                     end
                 end
