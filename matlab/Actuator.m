@@ -218,7 +218,7 @@ classdef Actuator
             end
 
             [position,rad] = Sensor.get_position_of_near_candy_in_img();
-            if rad<11.5
+            if rad<12
                 position = 20;
             end
 
@@ -242,7 +242,7 @@ classdef Actuator
                     Actuator.rotate_step(dir*0.2);
                 end
                 [position,rad] = Sensor.get_position_of_near_candy_in_img();
-                if rad<11.5
+                if rad<12
                     position = 20;
                 end
                 if toc > Actuator.time_out_const

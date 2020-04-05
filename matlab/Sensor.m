@@ -424,18 +424,23 @@ classdef Sensor
                 len_rad = length(rad_sorted);
                 rad_max = rad_sorted(1);
                 min_rad_in_area = rad_max;
-                id=-1;
+                id=1;
                 for n=1:len_rad
-                    if abs(rad_sorted(n)-min_rad_in_area)<10 && rad_sorted(n)>12.5
+                    if abs(rad_sorted(n)-min_rad_in_area)<10 && rad_sorted(n)>12
                         min_rad_in_area = rad_sorted(n);
                         id = n;
                     end
                 end
                 
-                position = pos_sorted(id);
-                rad = rad_sorted(id);
-                line([position,position],[0,480]);
-                %fprintf("chosen: %f, %f\n",rad,position);
+                if rad_sorted(id) > 12
+                    position = pos_sorted(id);
+                    rad = rad_sorted(id);
+                    line([position,position],[0,480]);
+                    fprintf("chosen: %f, %f\n",rad,position);
+                else
+                    position = -1;
+                    rad = -1;
+                end
             end
                 
         end
