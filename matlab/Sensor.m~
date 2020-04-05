@@ -234,12 +234,11 @@ classdef Sensor
 
             
             if (start_nan ~= 1) && (end_nan ~= 640)
-                if (allAreas < 300)
-                    fprintf("Door(s,e,A): (%f, %f, %f)\n", start_nan, allAreas, end_nan);
+                if (allAreas < 450)
+                    %fprintf("Door(s,e,A): (%f, %f, %f)\n", start_nan, allAreas, end_nan);
                     position = start_nan + allAreas/2.0;
-                    fprintf("position: %f \n",position);
+                    %fprintf("position: %f \n",position);
                     position = 640 - position;
-                    line([position,position],[0,480]);
                 end
             end
             
@@ -415,8 +414,8 @@ classdef Sensor
             %returned is the width pixel in image.
             
             [pos_sorted,rad_sorted] = Sensor.get_max_min_pos_and_rad_in_img();
-            %rad_sorted
-            %pos_sorted
+            rad_sorted
+            pos_sorted
             if isempty(pos_sorted)
                 position = -1;
                 rad = -1;
@@ -426,7 +425,7 @@ classdef Sensor
                 min_rad_in_area = rad_max;
                 id=-1;
                 for n=1:len_rad
-                    if abs(rad_sorted(n)-min_rad_in_area)<10 && rad_sorted(n)>12.5
+                    if abs(rad_sorted(n)-min_rad_in_area)<2
                         min_rad_in_area = rad_sorted(n);
                         id = n;
                     end
@@ -435,7 +434,7 @@ classdef Sensor
                 position = pos_sorted(id);
                 rad = rad_sorted(id);
                 line([position,position],[0,480]);
-                %fprintf("chosen: %f, %f\n",rad,position);
+                fprinf("chosen: %f")
             end
                 
         end
